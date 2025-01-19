@@ -42,16 +42,19 @@ class CrawlSession:
         self.connectors = connectors
 
     def execute(self):
+        """Execute the crawl session with embedded taxonomy data for posts."""
         if not (self.crawler and self.connectors):
             raise AssertionError("No crawler and/or connector is specified.")
         for resource in self.resources:
             while True:
-                raw_documents = self.crawler.crawl(resource=resource)
+                # Use _embed parameter for posts to get taxonomy data in a single request
+                use_embed = resource == 'posts'
+                raw_documents = self.crawler.crawl(resource=resource, embed=use_embed)
                 if not raw_documents:
                     break
                 current_timestamp = datetime.datetime.utcnow().isoformat()
                 documents = [JSONDocument(document, resource_type=resource, session_id=self.session_id,
-                                          crawledtime=current_timestamp) for document in raw_documents]
+                                           crawledtime=current_timestamp) for document in raw_documents]
                 for document in documents:
                     for connector in self.connectors:
                         connector.process_document(resource=resource, document=document)

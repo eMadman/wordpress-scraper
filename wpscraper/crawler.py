@@ -28,13 +28,24 @@ class SimpleRequestsCrawler(Crawler):
         self.crawl_rate = crawl_rate
         self.constant_retry_standoff = constant_retry_standoff
 
-    def crawl(self, resource: str):
+    def crawl(self, resource: str, embed: bool = False):
+        """
+        Crawl WordPress resources with optional taxonomy embedding.
+        
+        Args:
+            resource: The resource type to crawl (e.g., 'posts', 'pages')
+            embed: Whether to include embedded taxonomy data using _embed parameter
+        """
         documents = []
         if not resource in self.crawled_resource_count.keys():
             self.crawled_resource_count[resource] = 1
-        objs = self._get_json_response(
-            self.api_path+resource+'?per_page={}&page={}'.format(self.crawl_rate, self.crawled_resource_count[resource])
-        )
+            
+        # Construct URL with pagination and optional embedding
+        url = f"{self.api_path}{resource}?per_page={self.crawl_rate}&page={self.crawled_resource_count[resource]}"
+        if embed:
+            url += "&_embed"
+            
+        objs = self._get_json_response(url)
         if objs and isinstance(objs, list):
             documents = objs
             self.crawled_resource_count[resource] += 1
